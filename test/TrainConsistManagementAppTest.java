@@ -1,69 +1,80 @@
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-import java.util.regex.Pattern;
+import java.util.*;
 
 class TrainConsistManagementAppTest {
 
-    String trainRegex = "TRN-\\d{4}";
-    String cargoRegex = "PET-[A-Z]{2}";
+    static class GoodsBogie {
+        String type;
+        String cargo;
 
-    Pattern trainPattern = Pattern.compile(trainRegex);
-    Pattern cargoPattern = Pattern.compile(cargoRegex);
-
-    // 1. Valid Train ID
-    @Test
-    void testRegex_ValidTrainID() {
-        assertTrue(trainPattern.matcher("TRN-1234").matches());
+        GoodsBogie(String type, String cargo) {
+            this.type = type;
+            this.cargo = cargo;
+        }
     }
 
-    // 2. Invalid Train ID formats
-    @Test
-    void testRegex_InvalidTrainIDFormat() {
-        assertFalse(trainPattern.matcher("TRAIN12").matches());
-        assertFalse(trainPattern.matcher("TRN12A").matches());
-        assertFalse(trainPattern.matcher("1234-TRN").matches());
+    // Helper method (same logic as UC12)
+    private boolean isSafe(List<GoodsBogie> list) {
+        return list.stream()
+                .allMatch(g -> {
+                    if (g.type.equals("Cylindrical")) {
+                        return g.cargo.equals("Petroleum");
+                    }
+                    return true;
+                });
     }
 
-    // 3. Valid Cargo Code
+    // 1. All bogies valid
     @Test
-    void testRegex_ValidCargoCode() {
-        assertTrue(cargoPattern.matcher("PET-AB").matches());
+    void testSafety_AllBogiesValid() {
+        List<GoodsBogie> list = Arrays.asList(
+                new GoodsBogie("Cylindrical", "Petroleum"),
+                new GoodsBogie("Open", "Coal"),
+                new GoodsBogie("Box", "Grain")
+        );
+
+        assertTrue(isSafe(list));
     }
 
-    // 4. Invalid Cargo Code formats
+    // 2. Cylindrical with invalid cargo
     @Test
-    void testRegex_InvalidCargoCodeFormat() {
-        assertFalse(cargoPattern.matcher("PET-ab").matches());
-        assertFalse(cargoPattern.matcher("PET123").matches());
-        assertFalse(cargoPattern.matcher("AB-PET").matches());
+    void testSafety_CylindricalWithInvalidCargo() {
+        List<GoodsBogie> list = Arrays.asList(
+                new GoodsBogie("Cylindrical", "Coal") // invalid
+        );
+
+        assertFalse(isSafe(list));
     }
 
-    // 5. Train ID digit length validation
+    // 3. Non-cylindrical bogies allowed
     @Test
-    void testRegex_TrainIDDigitLengthValidation() {
-        assertFalse(trainPattern.matcher("TRN-123").matches());
-        assertFalse(trainPattern.matcher("TRN-12345").matches());
+    void testSafety_NonCylindricalBogiesAllowed() {
+        List<GoodsBogie> list = Arrays.asList(
+                new GoodsBogie("Open", "Coal"),
+                new GoodsBogie("Box", "Grain")
+        );
+
+        assertTrue(isSafe(list));
     }
 
-    // 6. Cargo uppercase validation
+    // 4. Mixed bogies with violation
     @Test
-    void testRegex_CargoCodeUppercaseValidation() {
-        assertFalse(cargoPattern.matcher("PET-ab").matches());
-        assertFalse(cargoPattern.matcher("PET-aB").matches());
+    void testSafety_MixedBogiesWithViolation() {
+        List<GoodsBogie> list = Arrays.asList(
+                new GoodsBogie("Cylindrical", "Petroleum"),
+                new GoodsBogie("Cylindrical", "Coal") // invalid
+        );
+
+        assertFalse(isSafe(list));
     }
 
-    // 7. Empty input handling
+    // 5. Empty bogie list
     @Test
-    void testRegex_EmptyInputHandling() {
-        assertFalse(trainPattern.matcher("").matches());
-        assertFalse(cargoPattern.matcher("").matches());
-    }
+    void testSafety_EmptyBogieList() {
+        List<GoodsBogie> list = new ArrayList<>();
 
-    // 8. Exact pattern match (no extra chars)
-    @Test
-    void testRegex_ExactPatternMatch() {
-        assertFalse(trainPattern.matcher("TRN-1234X").matches());
-        assertFalse(cargoPattern.matcher("PET-ABC").matches());
+        assertTrue(isSafe(list)); // allMatch returns true for empty list
     }
 }
